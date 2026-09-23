@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<!--
+  =============================================================================
+  Counter(TM)  -  Point of sale and customer self-ordering for food businesses
+  -----------------------------------------------------------------------------
+  Copyright (c) 2026 Khatijah Tech Solution. All rights reserved.
+  Hak cipta terpelihara.
+
+  Khatijah Tech Solution
+  SSM 202603222105 (KT0619806-H)
+  Seri Kembangan, Selangor, Malaysia
+  +60 11-6571 1315 | KhatijahTechSolution@outlook.com
+  www.khatijahtechsolution.com
+
+  -----------------------------------------------------------------------------
+  LICENCE / LESEN
+
+  This software is LICENSED, NOT SOLD. Khatijah Tech Solution grants the
+  named subscriber a non-exclusive, non-transferable licence to use this
+  software for the operation of their own business, for as long as their
+  subscription remains valid.
+
+  You may NOT, without written permission from Khatijah Tech Solution:
+    - copy, reproduce or redistribute this software or any part of it;
+    - sell, rent, sub-licence or otherwise make it available to others;
+    - modify, adapt, translate or create derivative works from it;
+    - remove or alter this notice, the copyright notices, or the
+      Khatijah Tech Solution branding shown within the application;
+    - reverse engineer or attempt to derive the source of any part of it.
+
+  Perisian ini DILESENKAN, BUKAN DIJUAL. Menyalin, mengedar, menjual semula,
+  mengubah suai atau membuang notis hak cipta ini adalah DILARANG tanpa
+  kebenaran bertulis daripada Khatijah Tech Solution.
+
+  This software is protected by the Copyright Act 1987 (Malaysia) and by
+  international copyright treaties. Unauthorised copying or distribution is
+  an infringement and may result in civil and criminal liability.
+
+  Counter(TM) is a trademark of Khatijah Tech Solution.
+  =============================================================================
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#F7F4EF">
+<meta name="robots" content="noindex,nofollow">
+<title>Order</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  :root{
+    --bg:#F7F4EF; --surface:#FFFFFF; --surface2:#FBF8F3; --line:#E7E0D6;
+    --ink:#1F1B16; --ink2:#4A423A; --muted:#8A8178; --muted2:#6E655C;
+    --accent:#E2592B; --accentDark:#C4441B; --green:#17803D; --red:#C4291C;
+    --safeB:env(safe-area-inset-bottom,0px);
+  }
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink)}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:15.5px;line-height:1.45;-webkit-font-smoothing:antialiased;
+    padding-bottom:calc(96px + var(--safeB));
+  }
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+  button{font-family:inherit;cursor:pointer}
+
+  header{
+    background:var(--surface);border-bottom:1px solid var(--line);
+    padding:14px 16px calc(14px);position:sticky;top:0;z-index:20;
+    padding-top:calc(14px + env(safe-area-inset-top,0px));
+  }
+  header .r{display:flex;align-items:center;gap:10px}
+  header h1{margin:0;font-size:19px;font-weight:800;letter-spacing:-.25px;flex:1;min-width:0;
+    overflow-wrap:anywhere}
+  .lang{
+    flex:0 0 auto;border:1px solid var(--line);background:var(--surface2);
+    border-radius:22px;padding:0 16px;min-height:44px;min-width:56px;
+    font-size:13px;font-weight:700;color:var(--ink2);
+  }
+  header .sub{font-size:12.5px;color:var(--muted);margin-top:2px}
+
+  .cats{
+    display:flex;gap:7px;overflow-x:auto;padding:11px 16px;
+    background:var(--bg);border-bottom:1px solid var(--line);
+    position:sticky;z-index:19;-webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .cats::-webkit-scrollbar{display:none}
+  .cats button{
+    flex:0 0 auto;border:1px solid var(--line);background:var(--surface);
+    border-radius:22px;padding:0 16px;min-height:44px;font-size:13.5px;font-weight:650;
+    color:var(--ink2);white-space:nowrap;
+  }
+  .cats button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+
+  .wrap{padding:14px 16px 0}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media (max-width:340px){ .grid{grid-template-columns:1fr} }
+  .item{
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:12px 12px 11px;text-align:left;display:flex;flex-direction:column;gap:5px;
+    min-height:82px;
+  }
+  .item .n{font-size:14px;font-weight:650;line-height:1.3;overflow-wrap:anywhere;color:var(--ink)}
+  .item .p{font-size:14px;font-weight:800;color:var(--accent);margin-top:auto}
+  .item.has{border-color:var(--accent);background:#FFF7F4;box-shadow:0 0 0 1px var(--accent) inset}
+  .itemwrap .cnt{
+    position:absolute;top:-7px;right:-7px;z-index:2;
+    background:var(--accent);color:#fff;
+    min-width:23px;height:23px;border-radius:12px;display:flex;align-items:center;
+    justify-content:center;font-size:12px;font-weight:800;padding:0 6px;
+    box-shadow:0 2px 6px -1px rgba(226,89,43,.55);
+  }
+  .itemwrap{position:relative;display:block;height:100%}
+  .itemwrap .item{width:100%;height:100%}
+  .catHead{
+    font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--accent);margin:18px 0 9px;
+  }
+  .catHead:first-child{margin-top:4px}
+
+  .bar{
+    position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);
+    border-top:1px solid var(--line);padding:12px 16px calc(12px + var(--safeB));
+    box-shadow:0 -6px 24px -18px rgba(0,0,0,.5);
+  }
+  .bar button{
+    width:100%;min-height:52px;border:0;border-radius:14px;background:var(--ink);color:#fff;
+    font-size:16px;font-weight:750;display:flex;align-items:center;justify-content:center;gap:10px;
+  }
+  .bar button:disabled{opacity:.4}
+  .bar .pill{
+    background:rgba(255,255,255,.22);border-radius:20px;padding:2px 9px;font-size:13px;font-weight:800;
+  }
+
+  .sheet{
+    position:fixed;inset:0;z-index:40;background:rgba(25,20,16,.5);
+    display:none;align-items:flex-end;
+  }
+  .sheet.on{display:flex}
+  .sheet .in{
+    background:var(--surface);width:100%;max-height:86vh;overflow-y:auto;
+    border-radius:20px 20px 0 0;padding:18px 16px calc(18px + var(--safeB));
+    -webkit-overflow-scrolling:touch;
+  }
+  .sheet h2{margin:0 0 3px;font-size:18px;font-weight:800}
+  .sheet .hint{font-size:13px;color:var(--muted2);margin:0 0 14px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+  .chips button{
+    border:1px solid var(--line);background:var(--surface2);border-radius:23px;
+    padding:0 17px;min-height:46px;font-size:14px;font-weight:650;color:var(--ink2);
+  }
+  .chips button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+
+  .line{
+    display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);
+  }
+  .line:last-of-type{border-bottom:0}
+  .line .nm{flex:1;min-width:0}
+  .line .nm b{display:block;font-size:14.5px;font-weight:650;overflow-wrap:anywhere}
+  .line .nm span{display:block;font-size:12px;color:var(--accent);margin-top:2px}
+  .line .nm .pr{color:var(--muted);font-size:12px}
+  .qty{display:flex;align-items:center;gap:0;flex:0 0 auto;border:1px solid var(--line);
+    border-radius:11px;overflow:hidden;background:var(--surface2)}
+  .qty button{width:46px;height:46px;border:0;background:transparent;font-size:18px;
+    font-weight:700;color:var(--ink);display:flex;align-items:center;justify-content:center}
+  .qty b{min-width:26px;text-align:center;font-size:15px;font-weight:800}
+  .noteBtn{
+    flex:0 0 auto;border:1px solid var(--line);background:var(--surface2);border-radius:11px;
+    padding:0 13px;min-height:44px;font-size:13px;font-weight:650;color:var(--ink2);
+  }
+  .noteBtn.on{border-color:var(--accent);color:var(--accent);background:#FFF3EE}
+
+  .tot{display:flex;justify-content:space-between;align-items:baseline;
+    padding:14px 0 4px;font-size:15px}
+  .tot b{font-size:23px;font-weight:800}
+  input[type=text]{
+    width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:13px;
+    background:var(--surface2);font-size:16px;color:var(--ink);min-height:50px;outline:none;
+    font-family:inherit;
+  }
+  input[type=text]:focus{border-color:var(--accent);background:var(--surface)}
+  .go{
+    width:100%;min-height:54px;border:0;border-radius:14px;background:var(--accent);color:#fff;
+    font-size:16.5px;font-weight:800;margin-top:12px;
+  }
+  .go:disabled{opacity:.45}
+  .ghostbtn{
+    width:100%;min-height:46px;border:1px solid var(--line);background:transparent;
+    border-radius:13px;color:var(--ink2);font-size:14.5px;font-weight:650;margin-top:9px;
+  }
+
+  .state{padding:40px 22px;text-align:center}
+  .state .big{font-size:54px;font-weight:800;letter-spacing:-2px;color:var(--accent);
+    line-height:1;margin-bottom:6px}
+  .state h2{margin:0 0 7px;font-size:21px;font-weight:800}
+  .state p{margin:0;color:var(--muted2);font-size:15px;max-width:34ch;margin-inline:auto}
+  .dotrow{display:flex;justify-content:center;gap:7px;margin:22px 0 0}
+  .dotrow i{width:9px;height:9px;border-radius:50%;background:var(--line);display:block}
+  .dotrow i.on{background:var(--accent)}
+  .badge{
+    display:inline-block;margin-top:16px;padding:9px 18px;border-radius:22px;
+    font-size:13.5px;font-weight:800;letter-spacing:.02em;
+  }
+  .state h2.st-ready{color:#0F6030}
+  .state h2.st-no{color:var(--red)}
+  .badge.wait{background:#FFF2DE;color:#8A5200}
+  .badge.prep{background:#FFF0EA;color:var(--accentDark)}
+  .badge.ready{background:#E4F3E9;color:#0F6030}
+  .badge.no{background:#FDECEA;color:#A32116}
+  .recap{
+    text-align:left;max-width:360px;margin:22px auto 0;background:var(--surface);
+    border:1px solid var(--line);border-radius:14px;padding:14px 15px;
+  }
+  .recap li{list-style:none;display:flex;gap:9px;padding:5px 0;font-size:13.5px}
+  .recap ul{margin:0;padding:0}
+  .recap .q{font-weight:800;min-width:24px}
+  .recap .o{display:block;color:var(--accent);font-size:12px;margin-top:1px}
+  .recap .sum{display:flex;justify-content:space-between;border-top:1px solid var(--line);
+    margin-top:9px;padding-top:9px;font-weight:800}
+
+  .msg{padding:54px 24px;text-align:center;color:var(--muted2)}
+  .msg h2{color:var(--ink);font-size:19px;margin:0 0 8px;font-weight:800}
+  .msg p{margin:0;font-size:14.5px;max-width:32ch;margin-inline:auto}
+  .spin{
+    width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--accent);
+    border-radius:50%;margin:0 auto 16px;animation:sp .8s linear infinite;
+  }
+  @keyframes sp{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){ .spin{animation-duration:2.4s} }
+
+  footer{
+    text-align:center;padding:26px 16px 10px;color:var(--muted);font-size:11px;line-height:1.7;
+  }
+  footer b{color:var(--muted2);font-weight:700;letter-spacing:.04em}
+  .toast{
+    position:fixed;left:50%;bottom:calc(104px + var(--safeB));transform:translateX(-50%) translateY(14px);
+    background:var(--ink);color:#fff;padding:11px 18px;border-radius:22px;font-size:13.5px;
+    font-weight:650;opacity:0;transition:.22s;pointer-events:none;z-index:60;max-width:86vw;text-align:center;
+  }
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<noscript>
+  <div class="msg"><h2>Please open this in a browser</h2>
+  <p>This ordering page needs JavaScript. Open the link in Chrome or Safari.</p></div>
+</noscript>
+
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---- config ---- */
+var DB='https://kts-counter-default-rtdb.asia-southeast1.firebasedatabase.app';   /* Firebase Realtime Database URL - filled in at build time */
+
+var L={
+  en:{
+    loading:'Loading the menu…',
+    noShop:'Scan the QR at the stall',
+    noShopSub:'This link is missing its shop code. Please scan the QR code at the counter.',
+    badShop:'Shop not found',
+    badShopSub:'This QR code does not match any shop. Please ask the staff.',
+    closedT:'Not taking online orders',
+    closedSub:'This stall is not accepting orders from phones right now. Please order at the counter.',
+    offline:'No connection',
+    offlineSub:'Check your mobile data or Wi-Fi and try again.',
+    retry:'Try again',
+    all:'All',
+    cartBtn:'View order',
+    empty:'Your order is empty',
+    yourOrder:'Your order',
+    yourOrderSub:'Check it, then send it to the kitchen.',
+    note:'Note',
+    noteT:'Any special request?',
+    noteSub:'Tap what you want changed. Tap again to remove.',
+    done:'Done',
+    total:'Total',
+    nameL:'Your name',
+    namePh:'Name for this order',
+    send:'Send order',
+    sending:'Sending…',
+    addMore:'Add more items',
+    needName:'Please enter your name',
+    sentT:'Order sent',
+    waitT:'Waiting for the stall',
+    waitSub:'The stall has your order and will accept it in a moment.',
+    prepT:'Being prepared',
+    prepSub:'Your food is being cooked now.',
+    readyT:'Ready to collect',
+    readySub:'Go to the counter and pay when you collect.',
+    doneT:'Collected',
+    doneSub:'Thank you. Enjoy your food!',
+    rejT:'Order not accepted',
+    rejSub:'The stall could not take this order. Please ask at the counter.',
+    orderNo:'Order',
+    payNote:'Pay at the counter when you collect.',
+    newOrder:'Place another order',
+    keepOpen:'Keep this page open to see your order status.',
+    sendFail:'Could not send. Check your connection and try again.',
+    sendClosed:'This stall has stopped taking online orders.',
+    poweredBy:'Powered by',
+    items:'items'
+  },
+  ms:{
+    loading:'Memuatkan menu…',
+    noShop:'Imbas kod QR di gerai',
+    noShopSub:'Pautan ini tiada kod kedai. Sila imbas kod QR di kaunter.',
+    badShop:'Kedai tidak dijumpai',
+    badShopSub:'Kod QR ini tidak sepadan dengan mana-mana kedai. Sila tanya pekerja.',
+    closedT:'Tidak menerima pesanan dalam talian',
+    closedSub:'Gerai ini tidak menerima pesanan dari telefon buat masa ini. Sila pesan di kaunter.',
+    offline:'Tiada sambungan',
+    offlineSub:'Semak data mudah alih atau Wi-Fi anda dan cuba lagi.',
+    retry:'Cuba lagi',
+    all:'Semua',
+    cartBtn:'Lihat pesanan',
+    empty:'Pesanan anda kosong',
+    yourOrder:'Pesanan anda',
+    yourOrderSub:'Semak, kemudian hantar ke dapur.',
+    note:'Nota',
+    noteT:'Ada permintaan khas?',
+    noteSub:'Tekan apa yang anda mahu ubah. Tekan sekali lagi untuk buang.',
+    done:'Selesai',
+    total:'Jumlah',
+    nameL:'Nama anda',
+    namePh:'Nama untuk pesanan ini',
+    send:'Hantar pesanan',
+    sending:'Menghantar…',
+    addMore:'Tambah item lain',
+    needName:'Sila masukkan nama anda',
+    sentT:'Pesanan dihantar',
+    waitT:'Menunggu gerai',
+    waitSub:'Gerai sudah terima pesanan anda dan akan sahkan sebentar lagi.',
+    prepT:'Sedang disediakan',
+    prepSub:'Makanan anda sedang dimasak.',
+    readyT:'Sedia untuk diambil',
+    readySub:'Pergi ke kaunter dan bayar semasa mengambil.',
+    doneT:'Sudah diambil',
+    doneSub:'Terima kasih. Selamat menjamu selera!',
+    rejT:'Pesanan tidak diterima',
+    rejSub:'Gerai tidak dapat menerima pesanan ini. Sila tanya di kaunter.',
+    orderNo:'Pesanan',
+    payNote:'Bayar di kaunter semasa mengambil.',
+    newOrder:'Buat pesanan lain',
+    keepOpen:'Biarkan halaman ini terbuka untuk lihat status pesanan anda.',
+    sendFail:'Tidak dapat menghantar. Semak sambungan anda dan cuba lagi.',
+    sendClosed:'Gerai ini telah berhenti menerima pesanan dalam talian.',
+    poweredBy:'Dikuasakan oleh',
+    items:'item'
+  }
+};
+var lang=(function(){
+  try{ var v=localStorage.getItem('ord_lang'); if(v==='en'||v==='ms') return v; }catch(e){}
+  return (navigator.language||'en').toLowerCase().indexOf('ms')===0?'ms':'en';
+})();
+function t(k){ return (L[lang]&&L[lang][k])||L.en[k]||k; }
+
+var code=(function(){
+  var m=(location.search||'').match(/[?&]s=([A-Za-z0-9]{1,12})/);
+  return m?m[1].toUpperCase():'';
+})();
+
+var M=null;                 /* published menu */
+var cart=[];                /* [{n,p,q,o:[]}] */
+var view='menu';            /* menu | status */
+var activeCat=null;
+var noteFor=-1;
+var sending=false;
+var myOrder=null;           /* {id, no, state, items, total, at} */
+var pollT=null;
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function money(n){ return (M&&M.cur?M.cur:'RM')+(Math.round(n*100)/100).toFixed(2); }
+function toast(m){
+  var e=$('toast'); e.textContent=m; e.classList.add('on');
+  clearTimeout(toast._t); toast._t=setTimeout(function(){ e.classList.remove('on'); },2800);
+}
+function buzz(ms){ if(navigator.vibrate) try{ navigator.vibrate(ms); }catch(e){} }
+function save(){
+  try{
+    localStorage.setItem('ord_lang',lang);
+    if(myOrder) localStorage.setItem('ord_'+code,JSON.stringify(myOrder));
+    else localStorage.removeItem('ord_'+code);
+  }catch(e){}
+}
+function load(){
+  try{
+    var v=localStorage.getItem('ord_'+code);
+    if(v){ var o=JSON.parse(v);
+      /* forget anything older than 6 hours - it is a new visit */
+      if(o && o.at && Date.now()-o.at < 6*3600000) myOrder=o;
+    }
+  }catch(e){}
+}
+
+/* ---- network ---- */
+function req(method,path,body,ok,fail){
+  var x=new XMLHttpRequest();
+  x.open(method,DB.replace(/\/+$/,'')+path+'.json',true);
+  if(body) x.setRequestHeader('Content-Type','application/json');
+  x.timeout=15000;
+  x.onreadystatechange=function(){
+    if(x.readyState!==4) return;
+    var d=null; try{ d=JSON.parse(x.responseText); }catch(e){}
+    if(x.status>=200&&x.status<300) ok(d);
+    else fail(x.status===401||x.status===403?'denied':'http');
+  };
+  x.ontimeout=function(){ fail('net'); };
+  x.onerror=function(){ fail('net'); };
+  try{ x.send(body?JSON.stringify(body):null); }catch(e){ fail('net'); }
+}
+
+/* ---- screens ---- */
+function msg(title,sub,retry){
+  return '<div class="msg"><h2>'+esc(title)+'</h2><p>'+esc(sub)+'</p>'+
+    (retry?'<button class="ghostbtn" id="retry" style="max-width:220px;margin:18px auto 0">'+t('retry')+'</button>':'')+
+    '</div>'+foot();
+}
+function foot(){
+  return '<footer><b>'+t('poweredBy').toUpperCase()+' KHATIJAH TECH SOLUTION</b><br>'+
+    'Counter™ · SSM 202603222105 (KT0619806-H)</footer>';
+}
+function cats(){
+  var seen={}, list=[];
+  (M.items||[]).forEach(function(i){
+    var c=i.c||'Other';
+    if(!seen[c]){ seen[c]=1; list.push(c); }
+  });
+  return list;
+}
+function cartQty(name){
+  var n=0;
+  cart.forEach(function(l){ if(l.n===name) n+=l.q; });
+  return n;
+}
+function cartTotal(){
+  var s=0; cart.forEach(function(l){ s+=l.p*l.q; }); return s;
+}
+function cartCount(){
+  var n=0; cart.forEach(function(l){ n+=l.q; }); return n;
+}
+
+function renderMenu(){
+  var h='<header><div class="r"><h1>'+esc(M.shop||'Menu')+'</h1>'+
+    '<button class="lang" id="langBtn">'+(lang==='en'?'BM':'EN')+'</button></div>'+
+    '<div class="sub">'+t('payNote')+'</div></header>';
+
+  var cs=cats();
+  h+='<div class="cats"><button class="'+(activeCat===null?'on':'')+'" data-cat="">'+t('all')+'</button>';
+  cs.forEach(function(c){
+    h+='<button class="'+(activeCat===c?'on':'')+'" data-cat="'+esc(c)+'">'+esc(c)+'</button>';
+  });
+  h+='</div><div class="wrap">';
+
+  var shown=(M.items||[]).filter(function(i){ return activeCat===null||(i.c||'Other')===activeCat; });
+  if(!shown.length){
+    h+='<div class="msg"><p>—</p></div>';
+  } else if(activeCat===null){
+    var cur='';
+    cs.forEach(function(c){
+      var group=shown.filter(function(i){ return (i.c||'Other')===c; });
+      if(!group.length) return;
+      h+='<div class="catHead">'+esc(c)+'</div><div class="grid">';
+      group.forEach(function(i){ h+=itemBtn(i); });
+      h+='</div>';
+    });
+  } else {
+    h+='<div class="grid">';
+    shown.forEach(function(i){ h+=itemBtn(i); });
+    h+='</div>';
+  }
+  h+='</div>'+foot();
+
+  var n=cartCount();
+  h+='<div class="bar"><button id="openCart"'+(n?'':' disabled')+'>'+
+     (n?'<span class="pill num">'+n+'</span>':'')+t(n?'cartBtn':'empty')+
+     (n?'<span class="num">'+money(cartTotal())+'</span>':'')+'</button></div>';
+  return h;
+}
+function itemBtn(i){
+  var q=cartQty(i.n);
+  return '<span class="itemwrap"><button class="item'+(q?' has':'')+'" data-add="'+esc(i.n)+'">'+
+    '<span class="n">'+esc(i.n)+'</span><span class="p num">'+money(i.p)+'</span></button>'+
+    (q?'<span class="cnt num">'+q+'</span>':'')+'</span>';
+}
+
+function renderCart(){
+  var h='<div class="sheet on" id="cartSheet"><div class="in">'+
+    '<h2>'+t('yourOrder')+'</h2><p class="hint">'+t('yourOrderSub')+'</p>';
+  cart.forEach(function(l,idx){
+    h+='<div class="line"><span class="nm"><b>'+esc(l.n)+'</b>'+
+       (l.o&&l.o.length?'<span>'+esc(l.o.join(' · '))+'</span>':'')+
+       '<span class="pr num">'+money(l.p)+'</span></span>'+
+       '<button class="noteBtn'+(l.o&&l.o.length?' on':'')+'" data-note="'+idx+'">'+t('note')+'</button>'+
+       '<span class="qty"><button data-dec="'+idx+'" aria-label="-">−</button>'+
+       '<b class="num">'+l.q+'</b>'+
+       '<button data-inc="'+idx+'" aria-label="+">+</button></span></div>';
+  });
+  h+='<div class="tot"><span>'+t('total')+'</span><b class="num">'+money(cartTotal())+'</b></div>'+
+     '<div style="margin-top:12px"><label for="who" style="display:block;font-size:11.5px;'+
+     'font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted2);'+
+     'margin-bottom:6px">'+t('nameL')+'</label>'+
+     '<input type="text" id="who" maxlength="40" autocomplete="name" placeholder="'+esc(t('namePh'))+'"></div>'+
+     '<button class="go" id="sendBtn"'+(sending?' disabled':'')+'>'+t(sending?'sending':'send')+'</button>'+
+     '<button class="ghostbtn" id="closeCart">'+t('addMore')+'</button>'+
+     '</div></div>';
+  return h;
+}
+function renderNote(){
+  var l=cart[noteFor]; if(!l) return '';
+  var list=(M.opts||[]);
+  var h='<div class="sheet on" id="noteSheet"><div class="in">'+
+    '<h2>'+esc(l.n)+'</h2><p class="hint">'+t('noteSub')+'</p><div class="chips">';
+  if(!list.length) h+='<p class="hint">—</p>';
+  list.forEach(function(o){
+    var on=(l.o||[]).indexOf(o)>=0;
+    h+='<button class="'+(on?'on':'')+'" data-opt="'+esc(o)+'">'+esc(o)+'</button>';
+  });
+  h+='</div><button class="go" id="noteDone">'+t('done')+'</button></div></div>';
+  return h;
+}
+
+function stateInfo(){
+  var s=myOrder&&myOrder.state;
+  if(s==='rejected') return ['no',t('rejT'),t('rejSub'),3];
+  if(s==='done')     return ['ready',t('doneT'),t('doneSub'),3];
+  if(s==='ready')    return ['ready',t('readyT'),t('readySub'),3];
+  if(s==='preparing')return ['prep',t('prepT'),t('prepSub'),2];
+  return ['wait',t('waitT'),t('waitSub'),1];
+}
+function renderStatus(){
+  var si=stateInfo();
+  var h='<header><div class="r"><h1>'+esc((M&&M.shop)||'')+'</h1>'+
+    '<button class="lang" id="langBtn">'+(lang==='en'?'BM':'EN')+'</button></div></header>';
+  h+='<div class="state">';
+  if(myOrder.no) h+='<div class="big num">#'+myOrder.no+'</div>';
+  else h+='<div class="big num" style="font-size:34px;letter-spacing:0">'+esc(myOrder.ref||'—')+'</div>';
+  h+='<h2 class="st-'+si[0]+'">'+esc(si[1])+'</h2><p>'+esc(si[2])+'</p>'+
+     '<div class="dotrow"><i class="'+(si[3]>=1?'on':'')+'"></i>'+
+     '<i class="'+(si[3]>=2?'on':'')+'"></i><i class="'+(si[3]>=3?'on':'')+'"></i></div>';
+
+  h+='<div class="recap"><ul>';
+  (myOrder.items||[]).forEach(function(i){
+    h+='<li><span class="q num">'+i.q+'×</span><span>'+esc(i.n)+
+       (i.o&&i.o.length?'<span class="o">'+esc(i.o.join(' · '))+'</span>':'')+'</span></li>';
+  });
+  h+='</ul><div class="sum"><span>'+t('total')+'</span><span class="num">'+money(myOrder.total||0)+'</span></div>'+
+     '<p style="font-size:12.5px;color:var(--muted2);margin:10px 0 0">'+t('payNote')+'</p></div>';
+
+  h+='<p style="font-size:12.5px;color:var(--muted);margin-top:18px">'+t('keepOpen')+'</p>';
+  h+='<button class="ghostbtn" id="again" style="max-width:300px;margin:16px auto 0">'+t('newOrder')+'</button>';
+  h+='</div>'+foot();
+  return h;
+}
+
+/* Re-rendering replaces the whole page, which would otherwise throw the
+   customer back to the top of the menu every time they tap an item, and
+   wipe whatever they had typed. Carry those three things across. */
+function render(){
+  var el=$('app');
+  var y=window.pageYOffset||document.documentElement.scrollTop||0;
+  var catX=0, cEl=document.querySelector('.cats');
+  if(cEl) catX=cEl.scrollLeft;
+  var whoEl=$('who'), whoVal=whoEl?whoEl.value:null;
+  var sheetEl=document.querySelector('.sheet.on .in');
+  var sheetY=sheetEl?sheetEl.scrollTop:0;
+  var hadFocus=whoEl&&document.activeElement===whoEl;
+
+  if(view==='status'&&myOrder){ el.innerHTML=renderStatus(); window.scrollTo(0,0); return; }
+  if(!M){ return; }
+  var h=renderMenu();
+  if(view==='cart'&&cart.length) h+=renderCart();
+  if(noteFor>=0) h+=renderNote();
+  el.innerHTML=h;
+
+  var c2=document.querySelector('.cats');
+  if(c2&&catX) c2.scrollLeft=catX;
+  var w2=$('who');
+  if(w2&&whoVal!==null){
+    w2.value=whoVal;
+    if(hadFocus){ try{ w2.focus(); w2.setSelectionRange(whoVal.length,whoVal.length); }catch(e){} }
+  }
+  var s2=document.querySelector('.sheet.on .in');
+  if(s2&&sheetY) s2.scrollTop=sheetY;
+  window.scrollTo(0,y);
+}
+
+/* ---- actions ---- */
+function addItem(name){
+  var it=null;
+  (M.items||[]).forEach(function(i){ if(i.n===name) it=i; });
+  if(!it) return;
+  var found=null;
+  cart.forEach(function(l){ if(l.n===it.n && (!l.o||!l.o.length)) found=l; });
+  if(found) found.q++;
+  else cart.push({n:it.n,p:+it.p||0,q:1,o:[]});
+  buzz(8); render();
+}
+function send(){
+  if(sending||!cart.length) return;
+  var el=$('who'), who=el?el.value.trim():'';
+  if(!who){ toast(t('needName')); if(el) el.focus(); return; }
+  sending=true; render();
+  var items=cart.map(function(l){
+    var o={n:l.n,p:l.p,q:l.q};
+    if(l.o&&l.o.length) o.o=l.o.slice();
+    return o;
+  });
+  var body={name:who.slice(0,40),at:Date.now(),total:cartTotal(),items:items};
+  req('POST','/incoming/'+encodeURIComponent(code),body,function(d){
+    sending=false;
+    var id=d&&d.name;
+    if(!id){ toast(t('sendFail')); render(); return; }
+    myOrder={id:id,ref:id.slice(-4).toUpperCase(),state:'',items:items,
+             total:body.total,at:Date.now(),no:0};
+    cart=[]; view='status'; save(); buzz(30); render(); startPoll();
+  },function(e){
+    sending=false;
+    toast(e==='denied'?t('sendClosed'):t('sendFail'));
+    render();
+  });
+}
+function startPoll(){
+  clearInterval(pollT);
+  if(!myOrder) return;
+  pollT=setInterval(checkOrder,6000);
+  checkOrder();
+}
+function checkOrder(){
+  if(!myOrder||document.hidden) return;
+  req('GET','/incoming/'+encodeURIComponent(code)+'/'+encodeURIComponent(myOrder.id),null,function(d){
+    if(d===null){
+      /* the stall removed it - it has been collected and closed off */
+      if(myOrder.state!=='rejected'){ myOrder.state='done'; save(); render(); }
+      clearInterval(pollT);
+      return;
+    }
+    var changed=false;
+    if(d.state&&d.state!==myOrder.state){ myOrder.state=d.state; changed=true; }
+    if(d.no&&d.no!==myOrder.no){ myOrder.no=d.no; changed=true; }
+    if(changed){
+      save(); render();
+      if(myOrder.state==='ready'){ buzz([80,60,80]); toast(t('readyT')); }
+      if(myOrder.state==='rejected'){ clearInterval(pollT); }
+    }
+  },function(){});
+}
+
+document.addEventListener('click',function(e){
+  var b=e.target.closest('button');
+
+  if(e.target.id==='cartSheet'){ view='menu'; render(); return; }
+  if(e.target.id==='noteSheet'){ noteFor=-1; render(); return; }
+  if(!b) return;
+
+  if(b.id==='langBtn'){ lang=(lang==='en'?'ms':'en'); save(); render(); return; }
+  if(b.id==='retry'){ boot(); return; }
+
+  if(b.dataset.cat!==undefined){ activeCat=b.dataset.cat||null; render(); return; }
+  if(b.dataset.add!==undefined){ addItem(b.dataset.add); return; }
+  if(b.id==='openCart'){ view='cart'; render(); return; }
+  if(b.id==='closeCart'){ view='menu'; render(); return; }
+
+  if(b.dataset.inc!==undefined){ cart[+b.dataset.inc].q++; buzz(6); render(); return; }
+  if(b.dataset.dec!==undefined){
+    var i=+b.dataset.dec;
+    cart[i].q--; if(cart[i].q<=0) cart.splice(i,1);
+    buzz(6);
+    if(!cart.length) view='menu';
+    render(); return;
+  }
+  if(b.dataset.note!==undefined){ noteFor=+b.dataset.note; render(); return; }
+  if(b.dataset.opt!==undefined){
+    var l=cart[noteFor]; if(!l) return;
+    if(!l.o) l.o=[];
+    var k=l.o.indexOf(b.dataset.opt);
+    if(k>=0) l.o.splice(k,1); else l.o.push(b.dataset.opt);
+    buzz(6); render(); return;
+  }
+  if(b.id==='noteDone'){ noteFor=-1; render(); return; }
+  if(b.id==='sendBtn'){ send(); return; }
+  if(b.id==='again'){
+    myOrder=null; view='menu'; cart=[]; clearInterval(pollT); save(); render(); return;
+  }
+});
+document.addEventListener('visibilitychange',function(){ if(!document.hidden) checkOrder(); });
+
+/* ---- boot ---- */
+function boot(){
+  var el=$('app');
+  if(!code){ el.innerHTML=msg(t('noShop'),t('noShopSub'),false); return; }
+  el.innerHTML='<div class="msg"><div class="spin"></div><p>'+esc(t('loading'))+'</p></div>';
+  req('GET','/menu/'+encodeURIComponent(code),null,function(d){
+    if(!d||!d.items||!d.items.length){
+      /* no menu yet - is this a real shop that is closed, or a wrong code? */
+      req('GET','/lic/'+encodeURIComponent(code),null,function(l){
+        el.innerHTML = l ? msg(t('closedT'),t('closedSub'),true)
+                         : msg(t('badShop'),t('badShopSub'),false);
+      },function(){ el.innerHTML=msg(t('closedT'),t('closedSub'),true); });
+      return;
+    }
+    M=d;
+    load();
+    if(myOrder){ view='status'; render(); startPoll(); }
+    else render();
+  },function(e){
+    if(e==='denied') el.innerHTML=msg(t('closedT'),t('closedSub'),true);
+    else if(e==='net') el.innerHTML=msg(t('offline'),t('offlineSub'),true);
+    else el.innerHTML=msg(t('badShop'),t('badShopSub'),true);
+  });
+}
+boot();
+
+})();
+</script>
+</body>
+</html>
