@@ -1960,7 +1960,8 @@ function regApprove(code){
     /* The shop name the owner registered with is the one they expect to see. */
     if(sreq && sreq.shop){ shop=sreq.shop; save(); }
     renderAppLock(); licBar(); render(); buzz(20); toast(t('regApproved'));
-    SO.claimed=''; SO.menuSig=''; soSave();
+    SO.claimed=''; SO.menuSig=''; SO.released=false;
+    store.set('bs_released',false); soSave();
     soPublishMenu(true,function(){ soStart(); render(); });
   },function(){ /* licence not readable yet - the next poll tries again */ });
 }
@@ -2017,7 +2018,8 @@ function licDoActivate(){
   licGet(code,function(d){
     lic.code=code; licApply(d);
     closeLic(); renderLic(); renderAccCounts(); licBar(); renderAppLock(); buzz(14); toast(t('licActivated'));
-    SO.claimed=''; SO.menuSig=''; soSave();
+    SO.claimed=''; SO.menuSig=''; SO.released=false;
+    store.set('bs_released',false); soSave();
     soPublishMenu(true,function(){ soStart(); render(); });
   },function(err){
     if(btn){ btn.disabled=false; btn.textContent=t('licActBtn'); }
@@ -2053,6 +2055,7 @@ var SO={
   rtok:store.get('bs_rtok',null),
   tok:null, tokExp:0,
   claimed:store.get('bs_claimed',''),
+  released:store.get('bs_released',false),
   menuSig:store.get('bs_menusig',''), qrSig:store.get('bs_qrsig',''),
   inbox:[], seen:store.get('bs_seen',{}),
   timer:null, busy:false, lastErr:''
@@ -2094,6 +2097,7 @@ function soErrText(e){
     return 'The Firebase API key is wrong';
   if(e==='net' || e.indexOf('net')===0) return 'No internet connection';
   if(e==='claimed') return 'Another phone already owns this shop';
+  if(e==='released') return 'This shop was moved to another phone. Enter the activation code again to use it here.';
   if(e.indexOf('Permission denied')>=0 || e.indexOf('401')>=0 || e.indexOf('403')>=0)
     return 'The database rules are rejecting this phone';
   return e.slice(0,70);
@@ -2132,7 +2136,9 @@ function soClaim(then,fail){
   soAuth(function(){
     soReq('GET',soUrl('/claims/'+encodeURIComponent(lic.code),false),null,function(who){
       if(who && who!==SO.uid){ SO.lastErr='claimed'; fail('claimed'); return; }
-      if(who===SO.uid){ SO.claimed=lic.code; soSave(); then(); return; }
+      if(who===SO.uid){ SO.claimed=lic.code; SO.released=false;
+                        store.set('bs_released',false); soSave(); then(); return; }
+      if(SO.released){ SO.lastErr='released'; fail('released'); return; }
       soReq('PUT',soUrl('/claims/'+encodeURIComponent(lic.code),true),
         JSON.stringify(SO.uid),
         function(){ SO.claimed=lic.code; soSave(); then(); },
@@ -2178,8 +2184,18 @@ function soPublishMenu(force,then){
   soClaim(function(){
     soReq('PUT',soUrl('/menu/'+encodeURIComponent(lic.code),true),JSON.stringify(p),
       function(){ SO.menuSig=sig; soSave(); soPublishQR(); then('ok'); },
-      function(e){ SO.lastErr=String(e); then(e); });
+      function(e){ soDenied(e); SO.lastErr=String(e); then(e); });
   },function(e){ then(e); });
+}
+function soDenied(e){
+  e=String(e||'');
+  if(e.indexOf('Permission denied')<0 && e.indexOf('401')<0 && e.indexOf('403')<0) return;
+  if(!SO.claimed) return;
+  /* We thought we owned this shop and the server disagrees - KTS has moved it
+     to another phone. Drop the claim, and refuse to take it back on our own:
+     the owner must type the code again, which is a deliberate act. */
+  SO.claimed=''; SO.released=true;
+  store.set('bs_released',true); soSave();
 }
 var soMenuTimer=null;
 function soMenuChanged(){
