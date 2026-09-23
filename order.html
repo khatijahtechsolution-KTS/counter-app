@@ -213,6 +213,29 @@
     background:#FFF2DE;color:#8A5200;border:1px solid #F0D9A8;border-radius:11px;
     padding:10px 13px;font-size:12.5px;font-weight:650;margin-top:14px;
   }
+  .reason{
+    max-width:360px;margin:20px auto 0;background:#FDECEA;border:1px solid #F3C9C3;
+    border-radius:14px;padding:13px 15px;text-align:left;
+  }
+  .reason b{
+    display:block;font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+    color:#A32116;margin-bottom:4px;
+  }
+  .reason span{display:block;font-size:14.5px;color:var(--ink);overflow-wrap:anywhere}
+  .alertask{
+    max-width:360px;margin:18px auto 0;background:var(--surface);border:1px solid var(--line);
+    border-radius:14px;padding:14px 15px;text-align:left;
+  }
+  .alertask b{display:block;font-size:14px;font-weight:700}
+  .alertask span{display:block;font-size:12.5px;color:var(--muted2);margin-top:2px}
+  .alertask button{
+    width:100%;min-height:46px;margin-top:11px;border:1.5px solid var(--accent);
+    background:transparent;border-radius:12px;color:var(--accent);font-size:14.5px;font-weight:700;
+  }
+  .alertok{
+    max-width:360px;margin:18px auto 0;font-size:12.5px;color:var(--green);
+    font-weight:650;text-align:center;
+  }
   .claimtag{
     display:inline-block;margin-top:12px;background:#FFF2DE;color:#8A5200;
     border-radius:20px;padding:7px 15px;font-size:12.5px;font-weight:750;
@@ -360,7 +383,17 @@ var L={
     claimedTag:'You said you already paid',
     cancelT:'Order cancelled',
     cancelSub:'The stall cancelled this order. Please speak to them at the counter.',
-    waMsg:'Hi, I have paid for my order.\nName: %s\nAmount: %a\nOrder: %r'
+    waMsg:'Hi, I have paid for my order.\nName: %s\nAmount: %a\nOrder: %r',
+    reasonL:'Reason from the stall',
+    notifReady:'Your order is ready',
+    notifReadyB:'%n is ready. Go to the counter to collect and pay.',
+    notifCancel:'Order cancelled',
+    notifCancelB:'The stall cancelled %n.',
+    notifPrep:'Order accepted',
+    notifPrepB:'%n is being prepared.',
+    alertsOn:'Tell me when it is ready',
+    alertsOnSub:'Your phone will buzz and show a message.',
+    alertsReady:'Alerts are on'
   },
   ms:{
     loading:'Memuatkan menu…',
@@ -430,7 +463,17 @@ var L={
     claimedTag:'Anda kata sudah bayar',
     cancelT:'Pesanan dibatalkan',
     cancelSub:'Gerai membatalkan pesanan ini. Sila berbincang dengan mereka di kaunter.',
-    waMsg:'Salam, saya sudah bayar untuk pesanan saya.\nNama: %s\nJumlah: %a\nPesanan: %r'
+    waMsg:'Salam, saya sudah bayar untuk pesanan saya.\nNama: %s\nJumlah: %a\nPesanan: %r',
+    reasonL:'Sebab daripada gerai',
+    notifReady:'Pesanan anda sudah siap',
+    notifReadyB:'%n sudah siap. Pergi ke kaunter untuk ambil dan bayar.',
+    notifCancel:'Pesanan dibatalkan',
+    notifCancelB:'Gerai membatalkan %n.',
+    notifPrep:'Pesanan diterima',
+    notifPrepB:'%n sedang disediakan.',
+    alertsOn:'Beritahu saya bila siap',
+    alertsOnSub:'Telefon anda akan bergetar dan papar mesej.',
+    alertsReady:'Amaran dihidupkan'
   }
 };
 var lang=(function(){
@@ -480,6 +523,59 @@ function load(){
       /* forget anything older than 6 hours - it is a new visit */
       if(o && o.at && Date.now()-o.at < 6*3600000) myOrder=o;
     }
+  }catch(e){}
+}
+
+
+/* The customer is not watching this screen - they are queueing or on
+   Instagram. Every change of state has to reach them by sound, vibration and,
+   if they allow it, a notification. */
+var AC=null;
+function unlockAudio(){
+  try{
+    var C=window.AudioContext||window.webkitAudioContext;
+    if(!C) return;
+    if(!AC) AC=new C();
+    if(AC.state==='suspended') AC.resume();
+  }catch(e){}
+}
+function tone(freq,start,dur,vol){
+  try{
+    if(!AC) return;
+    var o=AC.createOscillator(), g=AC.createGain();
+    o.connect(g); g.connect(AC.destination);
+    o.type='sine'; o.frequency.value=freq;
+    var t0=AC.currentTime+start;
+    g.gain.setValueAtTime(0.0001,t0);
+    g.gain.exponentialRampToValueAtTime(vol,t0+0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    o.start(t0); o.stop(t0+dur+0.02);
+  }catch(e){}
+}
+/* Rising for good news, falling for bad - recognisable without looking. */
+function sound(kind){
+  unlockAudio();
+  if(kind==='good'){
+    tone(784,0,0.16,0.5); tone(1047,0.15,0.18,0.5); tone(1319,0.31,0.34,0.5);
+    tone(784,0.75,0.16,0.45); tone(1047,0.90,0.18,0.45); tone(1319,1.06,0.36,0.45);
+  } else if(kind==='bad'){
+    tone(520,0,0.22,0.45); tone(392,0.22,0.42,0.45);
+  } else {
+    tone(880,0,0.14,0.35); tone(1100,0.13,0.20,0.35);
+  }
+}
+function vib(p){ if(navigator.vibrate) try{ navigator.vibrate(p); }catch(e){} }
+function notify(title,body){
+  try{
+    if(!window.Notification || Notification.permission!=='granted') return;
+    new Notification(title,{body:body,tag:'kts-cust',renotify:true});
+  }catch(e){}
+}
+function askAlerts(){
+  try{
+    if(!window.Notification) return;
+    if(Notification.permission!=='default') { render(); return; }
+    Notification.requestPermission().then(function(){ render(); });
   }catch(e){}
 }
 
@@ -676,6 +772,9 @@ function renderStatus(){
      '<div class="dotrow"><i class="'+(si[3]>=1?'on':'')+'"></i>'+
      '<i class="'+(si[3]>=2?'on':'')+'"></i><i class="'+(si[3]>=3?'on':'')+'"></i></div>';
 
+  if(myOrder.note && (myOrder.state==='cancelled'||myOrder.state==='rejected')){
+    h+='<div class="reason"><b>'+t('reasonL')+'</b><span>'+esc(myOrder.note)+'</span></div>';
+  }
   h+='<div class="recap"><ul>';
   (myOrder.items||[]).forEach(function(i){
     h+='<li><span class="q num">'+i.q+'×</span><span>'+esc(i.n)+
@@ -685,6 +784,15 @@ function renderStatus(){
      '<p style="font-size:12.5px;color:var(--muted2);margin:10px 0 0">'+t('payNote')+'</p></div>';
 
   if(myOrder.pay==='claimed') h+='<div class="claimtag">'+t('claimedTag')+'</div>';
+  var perm=(window.Notification&&Notification.permission)||'unsupported';
+  var live=(myOrder.state!=='cancelled'&&myOrder.state!=='rejected'&&myOrder.state!=='done');
+  if(live){
+    if(perm==='default')
+      h+='<div class="alertask"><b>'+t('alertsOn')+'</b><span>'+t('alertsOnSub')+'</span>'+
+         '<button id="askAlerts">'+t('alertsOn')+'</button></div>';
+    else if(perm==='granted')
+      h+='<div class="alertok">'+t('alertsReady')+'</div>';
+  }
   h+='<p style="font-size:12.5px;color:var(--muted);margin-top:18px">'+t('keepOpen')+'</p>';
   h+='<button class="ghostbtn" id="again" style="max-width:300px;margin:16px auto 0">'+t('newOrder')+'</button>';
   h+='</div>'+foot();
@@ -781,6 +889,29 @@ function send(){
     render();
   });
 }
+
+function announce(st){
+  /* Before the stall accepts there is no order number yet, so do not invent
+     one - say "your order" rather than showing an internal reference. */
+  var no=(myOrder&&myOrder.no) ? ('#'+myOrder.no) : t('yourOrder').toLowerCase();
+  if(st==='ready'){
+    sound('good'); vib([90,70,90,70,180]);
+    notify(t('notifReady'), t('notifReadyB').replace('%n',no));
+    toast(t('readyT'));
+  } else if(st==='cancelled'||st==='rejected'){
+    sound('bad'); vib([200,120,200]);
+    notify(t('notifCancel'), t('notifCancelB').replace('%n',no));
+    toast(st==='cancelled'?t('cancelT'):t('rejT'));
+    clearInterval(pollT);
+  } else if(st==='preparing'){
+    sound('ok'); vib([70,50,70]);
+    notify(t('notifPrep'), t('notifPrepB').replace('%n',no));
+  } else if(st==='done'){
+    sound('ok'); vib(90);
+    clearInterval(pollT);
+  }
+}
+
 function startPoll(){
   clearInterval(pollT);
   if(!myOrder) return;
@@ -792,22 +923,23 @@ function checkOrder(){
   req('GET','/incoming/'+encodeURIComponent(code)+'/'+encodeURIComponent(myOrder.id),null,function(d){
     if(d===null){
       /* the stall removed it - it has been collected and closed off */
-      if(myOrder.state!=='rejected'){ myOrder.state='done'; save(); render(); }
+      if(myOrder.state!=='rejected'&&myOrder.state!=='cancelled'&&myOrder.state!=='done'){
+        myOrder.state='done'; save(); render(); announce('done');
+      }
       clearInterval(pollT);
       return;
     }
-    var changed=false;
-    if(d.state&&d.state!==myOrder.state){ myOrder.state=d.state; changed=true; }
+    var changed=false, newState=false;
+    if(d.state&&d.state!==myOrder.state){ myOrder.state=d.state; changed=true; newState=true; }
     if(d.no&&d.no!==myOrder.no){ myOrder.no=d.no; changed=true; }
-    if(changed){
-      save(); render();
-      if(myOrder.state==='ready'){ buzz([80,60,80]); toast(t('readyT')); }
-      if(myOrder.state==='rejected'){ clearInterval(pollT); }
-    }
+    if(typeof d.note==='string' && d.note!==myOrder.note){ myOrder.note=d.note; changed=true; }
+    if(changed){ save(); render(); }
+    if(newState) announce(myOrder.state);
   },function(){});
 }
 
 document.addEventListener('click',function(e){
+  unlockAudio();
   var b=e.target.closest('button');
 
   if(e.target.id==='paySheet'){ grabFields(); view='cart'; render(); return; }
@@ -857,8 +989,9 @@ document.addEventListener('click',function(e){
     if(payMode==='claimed'){ view='pay'; render(); loadPayQR(); return; }
     send(); return;
   }
+  if(b.id==='askAlerts'){ askAlerts(); return; }
   if(b.id==='again'){
-    myOrder=null; view='menu'; cart=[]; clearInterval(pollT); save(); render(); return;
+    myOrder=null; view='menu'; cart=[]; payMode='counter'; clearInterval(pollT); save(); render(); return;
   }
 });
 document.addEventListener('visibilitychange',function(){ if(!document.hidden) checkOrder(); });
