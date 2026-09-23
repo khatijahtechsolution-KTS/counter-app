@@ -555,6 +555,17 @@ function tone(freq,start,dur,vol){
 /* Rising for good news, falling for bad - recognisable without looking. */
 function sound(kind){
   unlockAudio();
+  /* resume() is asynchronous. Scheduling notes on a context that is still
+     suspended plays nothing at all and reports no error, so wait for it. */
+  try{
+    if(AC && AC.state==='suspended'){
+      var p=AC.resume();
+      if(p&&p.then){ p.then(function(){ playSound(kind); },function(){}); return; }
+    }
+  }catch(e){}
+  playSound(kind);
+}
+function playSound(kind){
   if(kind==='good'){
     tone(784,0,0.16,0.5); tone(1047,0.15,0.18,0.5); tone(1319,0.31,0.34,0.5);
     tone(784,0.75,0.16,0.45); tone(1047,0.90,0.18,0.45); tone(1319,1.06,0.36,0.45);
