@@ -341,7 +341,7 @@ var L={
     phoneL:'Phone number',
     phonePh:'012-345 6789',
     phoneOpt:'optional',
-    phoneWhy:'So the stall can call you if they cannot find you.',
+    phoneWhy:'The stall will call you if your order needs checking, or if you do not come when it is ready.',
     needPhone:'Please enter your phone number',
     badPhone:'That does not look like a phone number',
     howPay:'How will you pay?',
@@ -411,7 +411,7 @@ var L={
     phoneL:'Nombor telefon',
     phonePh:'012-345 6789',
     phoneOpt:'pilihan',
-    phoneWhy:'Supaya gerai boleh telefon anda jika tidak jumpa.',
+    phoneWhy:'Gerai akan telefon anda jika pesanan perlu disemak, atau jika anda tidak datang bila pesanan siap.',
     needPhone:'Sila masukkan nombor telefon anda',
     badPhone:'Itu tidak kelihatan seperti nombor telefon',
     howPay:'Bagaimana anda akan bayar?',
@@ -589,8 +589,7 @@ function renderCart(){
   h+='<div class="tot"><span>'+t('total')+'</span><b class="num">'+money(cartTotal())+'</b></div>'+
      '<label class="fieldlbl" for="who">'+t('nameL')+'</label>'+
      '<input type="text" id="who" maxlength="40" autocomplete="name" placeholder="'+esc(t('namePh'))+'">'+
-     '<label class="fieldlbl" for="ph">'+t('phoneL')+
-       (payMode==='claimed'?'':' <em>('+t('phoneOpt')+')</em>')+'</label>'+
+     '<label class="fieldlbl" for="ph">'+t('phoneL')+'</label>'+
      '<input type="text" id="ph" maxlength="20" inputmode="tel" autocomplete="tel" placeholder="'+esc(t('phonePh'))+'">'+
      '<p class="why">'+t('phoneWhy')+'</p>'+
      '<div class="fieldlbl">'+t('howPay')+'</div><div class="paypick">'+
@@ -748,7 +747,7 @@ function grabFields(){
 function badFields(){
   grabFields();
   if(!draftName) return ['needName','who'];
-  if(payMode==='claimed' && !draftPhone) return ['needPhone','ph'];
+  if(!draftPhone) return ['needPhone','ph'];
   if(draftPhone && draftPhone.replace(/[^0-9]/g,'').length<7) return ['badPhone','ph'];
   return null;
 }
