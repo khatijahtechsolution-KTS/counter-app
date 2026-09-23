@@ -183,6 +183,40 @@
     width:100%;min-height:54px;border:0;border-radius:14px;background:var(--accent);color:#fff;
     font-size:16.5px;font-weight:800;margin-top:12px;
   }
+  .fieldlbl{
+    display:block;font-size:11.5px;font-weight:700;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--muted2);margin:14px 0 6px;
+  }
+  .fieldlbl em{font-style:normal;text-transform:none;letter-spacing:0;color:var(--muted);font-weight:600}
+  .why{font-size:12px;color:var(--muted);margin:6px 0 0}
+  .paypick{display:flex;flex-direction:column;gap:9px;margin-top:6px}
+  .paypick button{
+    display:flex;align-items:center;gap:11px;text-align:left;width:100%;
+    border:1.5px solid var(--line);background:var(--surface2);border-radius:14px;
+    padding:13px 14px;min-height:62px;color:var(--ink);
+  }
+  .paypick button.on{border-color:var(--accent);background:#FFF5F1}
+  .paypick .tick{
+    flex:0 0 auto;width:21px;height:21px;border-radius:50%;border:2px solid var(--line);
+    display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:800;
+  }
+  .paypick button.on .tick{background:var(--accent);border-color:var(--accent)}
+  .paypick .tx b{display:block;font-size:14.5px;font-weight:700}
+  .paypick .tx span{display:block;font-size:12.5px;color:var(--muted2);margin-top:1px}
+  .qrwrap{text-align:center;margin:4px 0 0}
+  .qrwrap img{
+    width:min(72vw,280px);height:auto;border-radius:12px;border:1px solid var(--line);
+    background:#fff;display:block;margin:10px auto 0;
+  }
+  .qramt{font-size:30px;font-weight:800;color:var(--accent);letter-spacing:-.5px;margin-top:4px}
+  .warn{
+    background:#FFF2DE;color:#8A5200;border:1px solid #F0D9A8;border-radius:11px;
+    padding:10px 13px;font-size:12.5px;font-weight:650;margin-top:14px;
+  }
+  .claimtag{
+    display:inline-block;margin-top:12px;background:#FFF2DE;color:#8A5200;
+    border-radius:20px;padding:7px 15px;font-size:12.5px;font-weight:750;
+  }
   .go:disabled{opacity:.45}
   .ghostbtn{
     width:100%;min-height:46px;border:1px solid var(--line);background:transparent;
@@ -303,7 +337,30 @@ var L={
     sendFail:'Could not send. Check your connection and try again.',
     sendClosed:'This stall has stopped taking online orders.',
     poweredBy:'Powered by',
-    items:'items'
+    items:'items',
+    phoneL:'Phone number',
+    phonePh:'012-345 6789',
+    phoneOpt:'optional',
+    phoneWhy:'So the stall can call you if they cannot find you.',
+    needPhone:'Please enter your phone number',
+    badPhone:'That does not look like a phone number',
+    howPay:'How will you pay?',
+    payCounter:'Pay at the counter',
+    payCounterSub:'Pay when you collect your food',
+    payNow:'Pay now by DuitNow',
+    payNowSub:'Scan the stall QR and pay before ordering',
+    payTitle:'Pay by DuitNow',
+    payAmount:'Amount to pay',
+    payScan:'Scan this with your banking app',
+    payNoQr:'This stall has not set up a QR yet. Please pay at the counter.',
+    payDone:'I have paid',
+    paySendWa:'Send receipt on WhatsApp',
+    payBack:'Pay at the counter instead',
+    payWarn:'Only tap this after the payment has actually gone through.',
+    claimedTag:'You said you already paid',
+    cancelT:'Order cancelled',
+    cancelSub:'The stall cancelled this order. Please speak to them at the counter.',
+    waMsg:'Hi, I have paid for my order.\nName: %s\nAmount: %a\nOrder: %r'
   },
   ms:{
     loading:'Memuatkan menu…',
@@ -350,7 +407,30 @@ var L={
     sendFail:'Tidak dapat menghantar. Semak sambungan anda dan cuba lagi.',
     sendClosed:'Gerai ini telah berhenti menerima pesanan dalam talian.',
     poweredBy:'Dikuasakan oleh',
-    items:'item'
+    items:'item',
+    phoneL:'Nombor telefon',
+    phonePh:'012-345 6789',
+    phoneOpt:'pilihan',
+    phoneWhy:'Supaya gerai boleh telefon anda jika tidak jumpa.',
+    needPhone:'Sila masukkan nombor telefon anda',
+    badPhone:'Itu tidak kelihatan seperti nombor telefon',
+    howPay:'Bagaimana anda akan bayar?',
+    payCounter:'Bayar di kaunter',
+    payCounterSub:'Bayar semasa mengambil makanan',
+    payNow:'Bayar sekarang guna DuitNow',
+    payNowSub:'Imbas QR gerai dan bayar sebelum pesan',
+    payTitle:'Bayar guna DuitNow',
+    payAmount:'Jumlah untuk dibayar',
+    payScan:'Imbas ini dengan aplikasi bank anda',
+    payNoQr:'Gerai ini belum menetapkan QR. Sila bayar di kaunter.',
+    payDone:'Saya sudah bayar',
+    paySendWa:'Hantar resit di WhatsApp',
+    payBack:'Bayar di kaunter sahaja',
+    payWarn:'Tekan ini hanya selepas pembayaran benar-benar berjaya.',
+    claimedTag:'Anda kata sudah bayar',
+    cancelT:'Pesanan dibatalkan',
+    cancelSub:'Gerai membatalkan pesanan ini. Sila berbincang dengan mereka di kaunter.',
+    waMsg:'Salam, saya sudah bayar untuk pesanan saya.\nNama: %s\nJumlah: %a\nPesanan: %r'
   }
 };
 var lang=(function(){
@@ -370,6 +450,10 @@ var view='menu';            /* menu | status */
 var activeCat=null;
 var noteFor=-1;
 var sending=false;
+var payMode='counter';      /* counter | claimed */
+var payQR=null;             /* the stall's DuitNow QR, fetched only if needed */
+var payQRState='';          /* '' | loading | none */
+var shopPhone='';
 var myOrder=null;           /* {id, no, state, items, total, at} */
 var pollT=null;
 
@@ -503,11 +587,22 @@ function renderCart(){
        '<button data-inc="'+idx+'" aria-label="+">+</button></span></div>';
   });
   h+='<div class="tot"><span>'+t('total')+'</span><b class="num">'+money(cartTotal())+'</b></div>'+
-     '<div style="margin-top:12px"><label for="who" style="display:block;font-size:11.5px;'+
-     'font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted2);'+
-     'margin-bottom:6px">'+t('nameL')+'</label>'+
-     '<input type="text" id="who" maxlength="40" autocomplete="name" placeholder="'+esc(t('namePh'))+'"></div>'+
-     '<button class="go" id="sendBtn"'+(sending?' disabled':'')+'>'+t(sending?'sending':'send')+'</button>'+
+     '<label class="fieldlbl" for="who">'+t('nameL')+'</label>'+
+     '<input type="text" id="who" maxlength="40" autocomplete="name" placeholder="'+esc(t('namePh'))+'">'+
+     '<label class="fieldlbl" for="ph">'+t('phoneL')+
+       (payMode==='claimed'?'':' <em>('+t('phoneOpt')+')</em>')+'</label>'+
+     '<input type="text" id="ph" maxlength="20" inputmode="tel" autocomplete="tel" placeholder="'+esc(t('phonePh'))+'">'+
+     '<p class="why">'+t('phoneWhy')+'</p>'+
+     '<div class="fieldlbl">'+t('howPay')+'</div><div class="paypick">'+
+       '<button class="'+(payMode==='counter'?'on':'')+'" data-pay="counter">'+
+         '<span class="tick">\u2713</span><span class="tx"><b>'+t('payCounter')+'</b>'+
+         '<span>'+t('payCounterSub')+'</span></span></button>'+
+       '<button class="'+(payMode==='claimed'?'on':'')+'" data-pay="claimed">'+
+         '<span class="tick">\u2713</span><span class="tx"><b>'+t('payNow')+'</b>'+
+         '<span>'+t('payNowSub')+'</span></span></button>'+
+     '</div>'+
+     '<button class="go" id="sendBtn"'+(sending?' disabled':'')+'>'+
+       t(sending?'sending':(payMode==='claimed'?'payNow':'send'))+'</button>'+
      '<button class="ghostbtn" id="closeCart">'+t('addMore')+'</button>'+
      '</div></div>';
   return h;
@@ -526,8 +621,45 @@ function renderNote(){
   return h;
 }
 
+function renderPay(){
+  var amt=money(cartTotal());
+  var h='<div class="sheet on" id="paySheet"><div class="in">'+
+    '<h2>'+t('payTitle')+'</h2><p class="hint">'+t('payScan')+'</p>'+
+    '<div class="qrwrap"><div style="font-size:11.5px;font-weight:700;letter-spacing:.05em;'+
+    'text-transform:uppercase;color:var(--muted2)">'+t('payAmount')+'</div>'+
+    '<div class="qramt num">'+amt+'</div>';
+  if(payQRState==='loading') h+='<div class="spin" style="margin:24px auto"></div>';
+  else if(payQR) h+='<img src="'+payQR+'" alt="DuitNow QR">';
+  else h+='<p class="hint" style="margin-top:16px">'+t('payNoQr')+'</p>';
+  h+='</div><div class="warn">'+t('payWarn')+'</div>';
+  if(payQR){
+    h+='<button class="go" id="paidBtn">'+t('payDone')+'</button>';
+    if(shopPhone) h+='<button class="ghostbtn" id="waBtn">'+t('paySendWa')+'</button>';
+  }
+  h+='<button class="ghostbtn" id="payCancel">'+t('payBack')+'</button></div></div>';
+  return h;
+}
+function loadPayQR(){
+  if(payQR||payQRState==='loading') return;
+  payQRState='loading'; render();
+  req('GET','/payqr/'+encodeURIComponent(code),null,function(d){
+    payQR=(typeof d==='string'&&d.indexOf('data:image')===0)?d:null;
+    payQRState=payQR?'':'none'; render();
+  },function(){ payQRState='none'; render(); });
+  /* the stall's own number, for sending the receipt */
+  req('GET','/lic/'+encodeURIComponent(code),null,function(l){
+    if(l&&l.phone){ shopPhone=String(l.phone); render(); }
+  },function(){});
+}
+function waNum(p){
+  var n=String(p||'').replace(/[^0-9]/g,'');
+  if(!n) return '';
+  if(n.charAt(0)==='0') n='60'+n.slice(1);
+  return n;
+}
 function stateInfo(){
   var s=myOrder&&myOrder.state;
+  if(s==='cancelled') return ['no',t('cancelT'),t('cancelSub'),3];
   if(s==='rejected') return ['no',t('rejT'),t('rejSub'),3];
   if(s==='done')     return ['ready',t('doneT'),t('doneSub'),3];
   if(s==='ready')    return ['ready',t('readyT'),t('readySub'),3];
@@ -553,6 +685,7 @@ function renderStatus(){
   h+='</ul><div class="sum"><span>'+t('total')+'</span><span class="num">'+money(myOrder.total||0)+'</span></div>'+
      '<p style="font-size:12.5px;color:var(--muted2);margin:10px 0 0">'+t('payNote')+'</p></div>';
 
+  if(myOrder.pay==='claimed') h+='<div class="claimtag">'+t('claimedTag')+'</div>';
   h+='<p style="font-size:12.5px;color:var(--muted);margin-top:18px">'+t('keepOpen')+'</p>';
   h+='<button class="ghostbtn" id="again" style="max-width:300px;margin:16px auto 0">'+t('newOrder')+'</button>';
   h+='</div>'+foot();
@@ -568,6 +701,7 @@ function render(){
   var catX=0, cEl=document.querySelector('.cats');
   if(cEl) catX=cEl.scrollLeft;
   var whoEl=$('who'), whoVal=whoEl?whoEl.value:null;
+  var phEl=$('ph'), phVal=phEl?phEl.value:null;
   var sheetEl=document.querySelector('.sheet.on .in');
   var sheetY=sheetEl?sheetEl.scrollTop:0;
   var hadFocus=whoEl&&document.activeElement===whoEl;
@@ -576,16 +710,17 @@ function render(){
   if(!M){ return; }
   var h=renderMenu();
   if(view==='cart'&&cart.length) h+=renderCart();
+  if(view==='pay'&&cart.length) h+=renderPay();
   if(noteFor>=0) h+=renderNote();
   el.innerHTML=h;
 
   var c2=document.querySelector('.cats');
   if(c2&&catX) c2.scrollLeft=catX;
   var w2=$('who');
-  if(w2&&whoVal!==null){
-    w2.value=whoVal;
-    if(hadFocus){ try{ w2.focus(); w2.setSelectionRange(whoVal.length,whoVal.length); }catch(e){} }
-  }
+  if(w2) w2.value = (whoVal!==null?whoVal:draftName);
+  if(w2&&hadFocus){ try{ w2.focus(); w2.setSelectionRange(w2.value.length,w2.value.length); }catch(e){} }
+  var p2=$('ph');
+  if(p2) p2.value = (phVal!==null?phVal:draftPhone);
   var s2=document.querySelector('.sheet.on .in');
   if(s2&&sheetY) s2.scrollTop=sheetY;
   window.scrollTo(0,y);
@@ -602,24 +737,45 @@ function addItem(name){
   else cart.push({n:it.n,p:+it.p||0,q:1,o:[]});
   buzz(8); render();
 }
+var draftName='', draftPhone='';
+function grabFields(){
+  var a=$('who'), b=$('ph');
+  if(a) draftName=a.value.trim();
+  if(b) draftPhone=b.value.trim();
+}
+/* One place decides whether the details are good enough, so the check cannot
+   differ between "send now" and "go and pay first". */
+function badFields(){
+  grabFields();
+  if(!draftName) return ['needName','who'];
+  if(payMode==='claimed' && !draftPhone) return ['needPhone','ph'];
+  if(draftPhone && draftPhone.replace(/[^0-9]/g,'').length<7) return ['badPhone','ph'];
+  return null;
+}
+function complain(bad){
+  toast(t(bad[0]));
+  var e=$(bad[1]); if(e){ try{ e.focus(); }catch(err){} }
+}
 function send(){
   if(sending||!cart.length) return;
-  var el=$('who'), who=el?el.value.trim():'';
-  if(!who){ toast(t('needName')); if(el) el.focus(); return; }
+  var bad=badFields();
+  if(bad){ complain(bad); return; }
+  var who=draftName, ph=draftPhone;
   sending=true; render();
   var items=cart.map(function(l){
     var o={n:l.n,p:l.p,q:l.q};
     if(l.o&&l.o.length) o.o=l.o.slice();
     return o;
   });
-  var body={name:who.slice(0,40),at:Date.now(),total:cartTotal(),items:items};
+  var body={name:who.slice(0,40),at:Date.now(),total:cartTotal(),items:items,pay:payMode};
+  if(ph) body.phone=ph.slice(0,20);
   req('POST','/incoming/'+encodeURIComponent(code),body,function(d){
     sending=false;
     var id=d&&d.name;
     if(!id){ toast(t('sendFail')); render(); return; }
     myOrder={id:id,ref:id.slice(-4).toUpperCase(),state:'',items:items,
-             total:body.total,at:Date.now(),no:0};
-    cart=[]; view='status'; save(); buzz(30); render(); startPoll();
+             total:body.total,at:Date.now(),no:0,pay:payMode};
+    cart=[]; view='status'; draftName=''; draftPhone=''; save(); buzz(30); render(); startPoll();
   },function(e){
     sending=false;
     toast(e==='denied'?t('sendClosed'):t('sendFail'));
@@ -655,7 +811,8 @@ function checkOrder(){
 document.addEventListener('click',function(e){
   var b=e.target.closest('button');
 
-  if(e.target.id==='cartSheet'){ view='menu'; render(); return; }
+  if(e.target.id==='paySheet'){ grabFields(); view='cart'; render(); return; }
+  if(e.target.id==='cartSheet'){ grabFields(); view='menu'; render(); return; }
   if(e.target.id==='noteSheet'){ noteFor=-1; render(); return; }
   if(!b) return;
 
@@ -665,7 +822,7 @@ document.addEventListener('click',function(e){
   if(b.dataset.cat!==undefined){ activeCat=b.dataset.cat||null; render(); return; }
   if(b.dataset.add!==undefined){ addItem(b.dataset.add); return; }
   if(b.id==='openCart'){ view='cart'; render(); return; }
-  if(b.id==='closeCart'){ view='menu'; render(); return; }
+  if(b.id==='closeCart'){ grabFields(); view='menu'; render(); return; }
 
   if(b.dataset.inc!==undefined){ cart[+b.dataset.inc].q++; buzz(6); render(); return; }
   if(b.dataset.dec!==undefined){
@@ -684,7 +841,23 @@ document.addEventListener('click',function(e){
     buzz(6); render(); return;
   }
   if(b.id==='noteDone'){ noteFor=-1; render(); return; }
-  if(b.id==='sendBtn'){ send(); return; }
+  if(b.dataset.pay){ grabFields(); payMode=b.dataset.pay; render(); return; }
+  if(b.id==='payCancel'){ payMode='counter'; view='cart'; render(); return; }
+  if(b.id==='paidBtn'){ send(); return; }
+  if(b.id==='waBtn'){
+    grabFields();
+    var msg=t('waMsg').replace('%s',draftName||'-')
+              .replace('%a',money(cartTotal())).replace('%r',(M&&M.shop)||'');
+    var to=waNum(shopPhone);
+    if(to) window.open('https://wa.me/'+to+'?text='+encodeURIComponent(msg),'_blank');
+    return;
+  }
+  if(b.id==='sendBtn'){
+    var bad=badFields();
+    if(bad){ complain(bad); return; }
+    if(payMode==='claimed'){ view='pay'; render(); loadPayQR(); return; }
+    send(); return;
+  }
   if(b.id==='again'){
     myOrder=null; view='menu'; cart=[]; clearInterval(pollT); save(); render(); return;
   }
