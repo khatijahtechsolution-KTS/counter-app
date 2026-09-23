@@ -188,6 +188,8 @@
     text-transform:uppercase;color:var(--muted2);margin:14px 0 6px;
   }
   .fieldlbl em{font-style:normal;text-transform:none;letter-spacing:0;color:var(--muted);font-weight:600}
+  .linkbtn{background:none;border:0;padding:0;font:inherit;color:var(--accent);
+    text-decoration:underline;cursor:pointer}
   .why{font-size:12px;color:var(--muted);margin:6px 0 0}
   .paypick{display:flex;flex-direction:column;gap:9px;margin-top:6px}
   .paypick button{
@@ -370,7 +372,7 @@ var L={
     howPay:'How will you pay?',
     payCounter:'Pay at the counter',
     payCounterSub:'Pay when you collect your food',
-    payNow:'Pay now by DuitNow',
+    remembered:'We filled these in from last time \u2014 change them if you need to.',forgetMe:'Forget my details',forgotten:'Details cleared from this phone',cancelBtn:'I need to cancel this order',cancelAsk:'Ask the stall to cancel',cancelHow:'Only the stall can cancel an order. Send them a message, or tell them at the counter.',cancelWa:'Message the stall on WhatsApp',cancelWalk:'I will tell them at the counter',cancelClose:'Keep my order',cancelMsg:'Hello, I would like to cancel my order %r at %s. Sorry for the trouble.',stillWaiting:'You still have an order waiting',stillWaitingSub:'Starting a new order will not cancel it. The stall is still making %r.',startAnyway:'Start a new order anyway',keepWatching:'Go back to my order',payNow:'Pay now by DuitNow',
     payNowSub:'Scan the stall QR and pay before ordering',
     payTitle:'Pay by DuitNow',
     payAmount:'Amount to pay',
@@ -450,7 +452,7 @@ var L={
     howPay:'Bagaimana anda akan bayar?',
     payCounter:'Bayar di kaunter',
     payCounterSub:'Bayar semasa mengambil makanan',
-    payNow:'Bayar sekarang guna DuitNow',
+    remembered:'Kami isi daripada kali terakhir \u2014 ubah jika perlu.',forgetMe:'Lupakan butiran saya',forgotten:'Butiran dipadam dari telefon ini',cancelBtn:'Saya perlu batalkan pesanan ini',cancelAsk:'Minta gerai batalkan',cancelHow:'Hanya gerai boleh membatalkan pesanan. Hantar mesej kepada mereka, atau beritahu di kaunter.',cancelWa:'Mesej gerai di WhatsApp',cancelWalk:'Saya akan beritahu di kaunter',cancelClose:'Kekalkan pesanan saya',cancelMsg:'Salam, saya ingin batalkan pesanan %r di %s. Maaf menyusahkan.',stillWaiting:'Anda masih ada pesanan menunggu',stillWaitingSub:'Memulakan pesanan baharu tidak akan membatalkannya. Gerai masih menyediakan %r.',startAnyway:'Mulakan pesanan baharu juga',keepWatching:'Kembali ke pesanan saya',payNow:'Bayar sekarang guna DuitNow',
     payNowSub:'Imbas QR gerai dan bayar sebelum pesan',
     payTitle:'Bayar guna DuitNow',
     payAmount:'Jumlah untuk dibayar',
@@ -509,6 +511,34 @@ function toast(m){
   clearTimeout(toast._t); toast._t=setTimeout(function(){ e.classList.remove('on'); },2800);
 }
 function buzz(ms){ if(navigator.vibrate) try{ navigator.vibrate(ms); }catch(e){} }
+/* Remembering who they are saves a regular typing their name and number at
+   every stall. It never leaves this phone - the stall only ever gets what
+   they actually send with an order. */
+var WHO={name:'',phone:'',known:false};
+function whoLoad(){
+  try{
+    var v=localStorage.getItem('ord_who');
+    if(!v) return;
+    var o=JSON.parse(v);
+    if(o && typeof o.name==='string' && typeof o.phone==='string'){
+      WHO.name=o.name.slice(0,40); WHO.phone=o.phone.slice(0,20);
+      WHO.known=!!(WHO.name && WHO.phone);
+    }
+  }catch(e){}
+}
+function whoSave(n,p){
+  WHO.name=String(n||'').slice(0,40); WHO.phone=String(p||'').slice(0,20);
+  WHO.known=!!(WHO.name && WHO.phone);
+  try{ localStorage.setItem('ord_who',JSON.stringify({name:WHO.name,phone:WHO.phone})); }catch(e){}
+}
+function whoForget(){
+  WHO.name=''; WHO.phone=''; WHO.known=false;
+  try{ localStorage.removeItem('ord_who'); }catch(e){}
+  draftName=''; draftPhone='';
+  var a=$('who'), b=$('ph');
+  if(a) a.value=''; if(b) b.value='';
+  toast(t('forgotten')); render();
+}
 function save(){
   try{
     localStorage.setItem('ord_lang',lang);
@@ -698,7 +728,9 @@ function renderCart(){
      '<input type="text" id="who" maxlength="40" autocomplete="name" placeholder="'+esc(t('namePh'))+'">'+
      '<label class="fieldlbl" for="ph">'+t('phoneL')+'</label>'+
      '<input type="text" id="ph" maxlength="20" inputmode="tel" autocomplete="tel" placeholder="'+esc(t('phonePh'))+'">'+
-     '<p class="why">'+t('phoneWhy')+'</p>'+
+     (WHO.known
+        ? '<p class="why">'+t('remembered')+' <button type="button" class="linkbtn" id="forgetMe">'+t('forgetMe')+'</button></p>'
+        : '<p class="why">'+t('phoneWhy')+'</p>')+
      '<div class="fieldlbl">'+t('howPay')+'</div><div class="paypick">'+
        '<button class="'+(payMode==='counter'?'on':'')+'" data-pay="counter">'+
          '<span class="tick">\u2713</span><span class="tx"><b>'+t('payCounter')+'</b>'+
@@ -805,9 +837,43 @@ function renderStatus(){
       h+='<div class="alertok">'+t('alertsReady')+'</div>';
   }
   h+='<p style="font-size:12.5px;color:var(--muted);margin-top:18px">'+t('keepOpen')+'</p>';
-  h+='<button class="ghostbtn" id="again" style="max-width:300px;margin:16px auto 0">'+t('newOrder')+'</button>';
-  h+='</div>'+foot();
+  if(live) h+='<button class="ghostbtn" id="cxAsk" style="max-width:300px;margin:16px auto 0">'+t('cancelBtn')+'</button>';
+  h+='<button class="ghostbtn" id="again" style="max-width:300px;margin:10px auto 0">'+t('newOrder')+'</button>';
+  h+='</div>';
+  if(ask==='cancel') h+=renderCancelAsk();
+  if(ask==='again')  h+=renderAgainAsk();
+  h+=foot();
   return h;
+}
+/* The customer cannot cancel by themselves: once an order is accepted the food
+   is on the grill, and a silent change is how arguments start. They ask, the
+   stall decides - the same rule as at the counter. */
+var ask='';
+function renderCancelAsk(){
+  var n=waNum(shopPhone);
+  var h='<div class="sheet on" id="cxSheet"><div class="in">'+
+    '<h2>'+t('cancelAsk')+'</h2><p class="hint">'+t('cancelHow')+'</p>';
+  if(n) h+='<button class="go" id="cxWa">'+t('cancelWa')+'</button>';
+  h+='<button class="ghostbtn" id="cxWalk">'+t('cancelWalk')+'</button>'+
+     '<button class="ghostbtn" id="cxClose">'+t('cancelClose')+'</button>'+
+     '</div></div>';
+  return h;
+}
+function renderAgainAsk(){
+  var ref=myOrder.no?('#'+myOrder.no):('ref '+(myOrder.ref||''));
+  return '<div class="sheet on" id="agSheet"><div class="in">'+
+    '<h2>'+t('stillWaiting')+'</h2>'+
+    '<p class="hint">'+esc(t('stillWaitingSub').replace('%r',ref))+'</p>'+
+    '<button class="go" id="agGo">'+t('startAnyway')+'</button>'+
+    '<button class="ghostbtn" id="agBack">'+t('keepWatching')+'</button>'+
+    '</div></div>';
+}
+function cancelWhatsApp(){
+  var n=waNum(shopPhone); if(!n) return;
+  var ref=myOrder.no?('#'+myOrder.no):('ref '+(myOrder.ref||''));
+  var msg=t('cancelMsg').replace('%r',ref).replace('%s',(M&&M.shop)||'');
+  try{ window.open('https://wa.me/'+n+'?text='+encodeURIComponent(msg),'_blank'); }catch(e){}
+  ask=''; render();
 }
 
 /* Re-rendering replaces the whole page, which would otherwise throw the
@@ -835,10 +901,10 @@ function render(){
   var c2=document.querySelector('.cats');
   if(c2&&catX) c2.scrollLeft=catX;
   var w2=$('who');
-  if(w2) w2.value = (whoVal!==null?whoVal:draftName);
+  if(w2) w2.value = (whoVal!==null?whoVal:(draftName||WHO.name));
   if(w2&&hadFocus){ try{ w2.focus(); w2.setSelectionRange(w2.value.length,w2.value.length); }catch(e){} }
   var p2=$('ph');
-  if(p2) p2.value = (phVal!==null?phVal:draftPhone);
+  if(p2) p2.value = (phVal!==null?phVal:(draftPhone||WHO.phone));
   var s2=document.querySelector('.sheet.on .in');
   if(s2&&sheetY) s2.scrollTop=sheetY;
   window.scrollTo(0,y);
@@ -860,6 +926,8 @@ function grabFields(){
   var a=$('who'), b=$('ph');
   if(a) draftName=a.value.trim();
   if(b) draftPhone=b.value.trim();
+  if(!draftName) draftName=WHO.name;
+  if(!draftPhone) draftPhone=WHO.phone;
 }
 /* One place decides whether the details are good enough, so the check cannot
    differ between "send now" and "go and pay first". */
@@ -893,6 +961,7 @@ function send(){
     if(!id){ toast(t('sendFail')); render(); return; }
     myOrder={id:id,ref:id.slice(-4).toUpperCase(),state:'',items:items,
              total:body.total,at:Date.now(),no:0,pay:payMode};
+    whoSave(who,ph);
     cart=[]; view='status'; draftName=''; draftPhone=''; save(); buzz(30); render(); startPoll();
   },function(e){
     sending=false;
@@ -923,7 +992,14 @@ function announce(st){
   }
 }
 
+function loadShopPhone(){
+  if(shopPhone||!code) return;
+  req('GET','/lic/'+encodeURIComponent(code),null,function(l){
+    if(l&&l.phone){ shopPhone=String(l.phone); if(view==='status') render(); }
+  },function(){});
+}
 function startPoll(){
+  loadShopPhone();
   clearInterval(pollT);
   if(!myOrder) return;
   pollT=setInterval(checkOrder,6000);
@@ -1001,7 +1077,20 @@ document.addEventListener('click',function(e){
     send(); return;
   }
   if(b.id==='askAlerts'){ askAlerts(); return; }
+  if(b.id==='forgetMe'){ whoForget(); return; }
+  if(b.id==='cxAsk'){ ask='cancel'; render(); return; }
+  if(b.id==='cxWa'){ cancelWhatsApp(); return; }
+  if(b.id==='cxWalk'||b.id==='cxClose'){ ask=''; render(); return; }
+  if(b.id==='agBack'){ ask=''; render(); return; }
+  if(b.id==='agGo'){
+    ask=''; myOrder=null; view='menu'; cart=[]; payMode='counter';
+    clearInterval(pollT); save(); render(); return;
+  }
   if(b.id==='again'){
+    /* never let a live order be abandoned by accident - the stall is cooking it */
+    var liveNow = myOrder && myOrder.state!=='cancelled' && myOrder.state!=='rejected' &&
+                  myOrder.state!=='done';
+    if(liveNow){ ask='again'; render(); return; }
     myOrder=null; view='menu'; cart=[]; payMode='counter'; clearInterval(pollT); save(); render(); return;
   }
 });
@@ -1009,6 +1098,7 @@ document.addEventListener('visibilitychange',function(){ if(!document.hidden) ch
 
 /* ---- boot ---- */
 function boot(){
+  whoLoad();
   var el=$('app');
   if(!code){ el.innerHTML=msg(t('noShop'),t('noShopSub'),false); return; }
   el.innerHTML='<div class="msg"><div class="spin"></div><p>'+esc(t('loading'))+'</p></div>';
